@@ -1,0 +1,11 @@
+server:
+  port: ${PORT:8002}
+
+info:
+  component: "@project.name@"
+  name: "@project.artifactId@"
+  versiom: "@project.version@"
+
+spring:
+  application:
+    name: "@project.artifactId@"

@@ -1,0 +1,156 @@
+version: '2.1'
+
+services:
+  rabbitmq:
+    image: datafyit/rabbitmq:shovel
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      - RABBITMQ_DEFAULT_USER=demo
+      - RABBITMQ_DEFAULT_PASS=password
+    expose:
+      - "5672"
+      - "15672"
+
+  discovery:
+    build: ground/grd-support/grd-discovery
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+    ports:
+      - "8761:8761"
+    expose:
+      - "8761"
+    links:
+      - rabbitmq
+
+  config:
+    build:
+      context: ./
+      dockerfile: ./ground/grd-support/grd-config/DockerfileLocal
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "WAIT_HOSTS=discovery:8761"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8888:8888"
+    expose:
+      - "8888"
+    links:
+      - rabbitmq
+      - discovery
+
+  hystrix:
+    build: ground/grd-support/grd-hystrix-monitor
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "7979:7979"
+    expose:
+      - "7979"
+    links:
+      - rabbitmq
+      - config
+
+  turbine:
+    build: ground/grd-support/grd-turbine
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8989:8989"
+    expose:
+      - "8989"
+    links:
+      - rabbitmq
+      - discovery
+      - config
+
+  zipkin:
+    build: ground/grd-support/grd-zipkin
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "9411:9411"
+    expose:
+      - "9411"
+    links:
+      - rabbitmq
+      - discovery
+      - config
+
+  admin:
+    build: ground/grd-support/grd-cluster-admin
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888,gateway:8765"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8766:8766"
+    expose:
+      - "8766"
+    links:
+      - rabbitmq
+      - discovery
+      - config
+
+  gateway:
+    build: ground/grd-api-gateway
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8765:8765"
+    links:
+      - rabbitmq
+      - config
+      - discovery
+
+  user:
+    build: ground/grd-user
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888,gateway:8765"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8001:8001"
+    links:
+      - rabbitmq
+      - config
+      - discovery
+
+  role:
+    build: ground/grd-role
+    restart: always
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+      - "EUREKA_HOST=discovery"
+      - "WAIT_HOSTS=discovery:8761,config:8888,gateway:8765"
+      - "WAIT_HOSTS_TIMEOUT=9999999999999"
+    ports:
+      - "8002:8002"
+    links:
+      - rabbitmq
+      - config
+      - discovery

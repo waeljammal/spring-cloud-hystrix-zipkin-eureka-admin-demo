@@ -1,0 +1,8 @@
+info:
+  component: "@project.name@"
+  name: "@project.artifactId@"
+  versiom: "@project.version@"
+
+spring:
+  application:
+    name: "@project.artifactId@"
